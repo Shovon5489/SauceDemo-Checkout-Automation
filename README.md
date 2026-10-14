@@ -37,7 +37,7 @@ The current automation is a sequential end-to-end browser flow in `main_body.js`
 | Order confirmation | Completes both checkout flows and asserts the **Thank you for your order!** confirmation. |
 | App state and logout | Resets app state and logs out as part of the flow. |
 
-The browser scenarios run sequentially as one Mocha end-to-end test, with results written for Allure. The project does not include a separate unit-test suite or cross-browser test configuration.
+The browser scenarios run sequentially in one shared Chrome session as separate Mocha tests, with an individual Allure result for each scenario. The project does not include a separate unit-test suite or cross-browser test configuration.
 
 ## Sample Manual Test Cases
 
@@ -61,7 +61,7 @@ An editable Excel workbook with these test cases, execution steps, expected resu
 ```text
 .
 ├── Api_call.js          # Axios functions for retrieving/parsing product data
-├── automation.test.js   # Mocha entry point that runs the browser flow for Allure
+├── automation.test.js   # Sequential Mocha scenarios with individual Allure results
 ├── main_body.js         # End-to-end Selenium checkout automation
 ├── package.json         # Project dependencies
 ├── SauceDemo_Test_Cases.xlsx # Editable test-case workbook and status dashboard
@@ -92,7 +92,7 @@ npm run allure:generate
 npm run allure:open
 ```
 
-`npm test` opens Chrome, runs the sequential browser flow, and writes raw Allure results to `allure-results/`. Generate the HTML report with `npm run allure:generate`, then open it with `npm run allure:open` (equivalent to `allure open allure-report`). Selenium Manager may download a compatible ChromeDriver if one is not already available. The Allure CLI requires Java 8 or later.
+`npm test` opens Chrome, runs eight sequential Mocha scenarios in one browser session, and writes a separate raw Allure result for each scenario to `allure-results/`. Old raw results are cleared before each test run. Generate the HTML report with `npm run allure:generate`, then open it with `npm run allure:open` (equivalent to `allure open allure-report`). Selenium Manager may download a compatible ChromeDriver if one is not already available. The Allure CLI requires Java 8 or later.
 
 ## Test Flow
 

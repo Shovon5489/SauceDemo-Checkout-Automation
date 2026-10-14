@@ -10,7 +10,8 @@
     "mocha": "^12.0.3"
   },
   "scripts": {
-    "test": "mocha --reporter allure-mocha --reporter-option resultsDir=allure-results automation.test.js",
+    "pretest": "node --input-type=commonjs -e \"require('node:fs').rmSync('allure-results', { recursive: true, force: true })\"",
+    "test": "mocha --bail --reporter allure-mocha --reporter-option resultsDir=allure-results automation.test.js",
     "allure:generate": "allure generate allure-results --clean -o allure-report",
     "allure:open": "allure open allure-report"
   }

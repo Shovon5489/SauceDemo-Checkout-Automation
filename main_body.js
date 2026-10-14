@@ -3,17 +3,6 @@ import { Options } from "selenium-webdriver/chrome.js";
 import assert from "node:assert/strict";
 import { resetAppState } from "./reset_app_state.js";
 
-const chromeOptions = new Options();
-chromeOptions.setUserPreferences({
-    "credentials_enable_service": false,
-    "profile.password_manager_enabled": false,
-    "profile.password_manager_leak_detection": false,
-});
-const driverPromise = new Builder()
-    .forBrowser(Browser.CHROME)
-    .setChromeOptions(chromeOptions)
-    .build();
-
 function moneyTextToCents(text) {
     const amount = text.match(/(\d[\d,]*\.\d{2})/);
     if (!amount) {
@@ -54,324 +43,266 @@ async function getRandomProductsFromInventory(driver, count) {
     return shuffledProducts.slice(0, count);
 }
 
-async function runner() {
-    const driver = await driverPromise;
-    await driver.get("https://www.saucedemo.com/");
-    await driver.manage().window().maximize();
+export async function createAutomationSession() {
+    const chromeOptions = new Options();
+    chromeOptions.setUserPreferences({
+        "credentials_enable_service": false,
+        "profile.password_manager_enabled": false,
+        "profile.password_manager_leak_detection": false,
+    });
 
-    // Login section
-    await driver.findElement(By.xpath("//input[@id='user-name' and @name='user-name']"))
-        .sendKeys("locked_out_user");
-    await driver.findElement(By.xpath("//input[@id='password' and @name='password']"))
-        .sendKeys("secret_sauce");
-    await driver.findElement(By.xpath("//input[@id='login-button' and @name='login-button']"))
-        .click();
-    await driver.sleep(3000);
+    const driver = await new Builder()
+        .forBrowser(Browser.CHROME)
+        .setChromeOptions(chromeOptions)
+        .build();
+    let selectedProducts = [];
+    let firstSortedProductName = "";
+    let firstSortedProductPriceCents = 0;
 
-    // Error message assertion section
-    const actualResult = await driver.findElement(
-        By.xpath("//h3[@data-test='error']")
-    ).getText();
-    const expectedResult = "Epic sadface: Sorry, this user has been locked out.";
-    assert.equal(actualResult, expectedResult);
-    console.log("Assertion passed: actual error message matches expected result.");
-    await driver.sleep(3000);
-
-    // Login again with standard_user
-    const usernameField = driver.findElement(
-        By.xpath("//input[@id='user-name' and @name='user-name']")
-    );
-    const passwordField = driver.findElement(
-        By.xpath("//input[@id='password' and @name='password']")
-    );
-    await usernameField.clear();
-    await usernameField.sendKeys("standard_user");
-    await passwordField.clear();
-    await passwordField.sendKeys("secret_sauce");
-    await driver.findElement(By.xpath("//input[@id='login-button' and @name='login-button']")).click();
-    await driver.sleep(3000);
-
-    // Reset App State after standard_user login
-    await resetAppState(driver);
-
-    // Random product selection and add-to-cart section
-    const selectedProducts = await getRandomProductsFromInventory(driver, 3);
-    for (const product of selectedProducts) {
-        const productLocator = By.xpath(`//a[div[contains(text(), '${product.name}')]]`);
-        await driver.wait(until.elementLocated(productLocator), 10000);
-        await driver.findElement(productLocator).click();
-        await driver.sleep(3000);
-
-        const addToCartLocator = By.xpath("//button[normalize-space()='Add to cart']");
-        await driver.wait(until.elementLocated(addToCartLocator), 10000);
-        await driver.findElement(addToCartLocator).click();
-        console.log(`Added to cart: ${product.name} ($${product.price.toFixed(2)})`);
-        await driver.sleep(3000);
-
-        const backToProductsLocator = By.xpath("//button[text()='Back to products']");
-        await driver.wait(until.elementLocated(backToProductsLocator), 10000);
-        await driver.findElement(backToProductsLocator).click();
-        await driver.sleep(3000);
+    async function enterCheckoutInformation() {
+        await driver.wait(until.elementLocated(By.id("first-name")), 10000);
+        await driver.findElement(By.id("first-name")).sendKeys("Nafis Fuad");
+        await driver.findElement(By.id("last-name")).sendKeys("Shovon");
+        await driver.findElement(By.id("postal-code")).sendKeys("1240");
+        const continueButton = By.xpath("//input[@id='continue']");
+        await driver.wait(until.elementLocated(continueButton), 10000);
+        await driver.findElement(continueButton).click();
     }
 
-    // Shopping cart section
-    const shoppingCartLocator = By.xpath("//a[@data-test='shopping-cart-link']");
-    await driver.wait(until.elementLocated(shoppingCartLocator), 10000);
-    await driver.findElement(shoppingCartLocator).click();
-    await driver.sleep(3000);
+    async function completeOrder() {
+        const finishButton = By.xpath("//button[@id='finish']");
+        await driver.wait(until.elementLocated(finishButton), 10000);
+        await driver.findElement(finishButton).click();
 
-    // Checkout section
-    const checkoutLocator = By.xpath("//button[text()='Checkout']");
-    await driver.wait(until.elementLocated(checkoutLocator), 10000);
-    await driver.findElement(checkoutLocator).click();
-    await driver.sleep(3000);
+        const confirmation = By.xpath("//h2[text()='Thank you for your order!']");
+        const message = await driver.wait(until.elementLocated(confirmation), 10000).getText();
+        assert.equal(message, "Thank you for your order!");
+        console.log(`Order confirmation verified: ${message}`);
+    }
 
-    // Checkout information section
-    await driver.findElement(By.id("first-name")).sendKeys("Nafis Fuad");
-    await driver.findElement(By.id("last-name")).sendKeys("Shovon");
-    await driver.findElement(By.id("postal-code")).sendKeys("1240");
-    await driver.findElement(By.xpath("//input[@id='continue']")).click();
-    await driver.sleep(3000);
+    async function resetAndLogout() {
+        await driver.findElement(By.xpath("//button[@id='react-burger-menu-btn']")).click();
+        await driver.sleep(3000);
+        const resetLink = By.xpath("//a[@data-test='reset-sidebar-link']");
+        await driver.wait(until.elementIsVisible(driver.findElement(resetLink)), 10000);
+        await driver.findElement(resetLink).click();
+        await driver.sleep(3000);
 
-    // Verify selected products are visible on the checkout overview
-    const missingProducts = [];
-    for (const product of selectedProducts) {
-        const productLocator = By.xpath(`//a[div[contains(text(), '${product.name}')]]`);
-        const productElements = await driver.findElements(productLocator);
-        let productIsVisible = false;
+        const logoutLink = By.xpath("//a[text()='Logout']");
+        await driver.wait(until.elementIsVisible(driver.findElement(logoutLink)), 10000);
+        await driver.findElement(logoutLink).click();
+    }
 
-        for (const productElement of productElements) {
-            if (await productElement.isDisplayed()) {
-                productIsVisible = true;
-                break;
+    return {
+        driver,
+
+        async verifyLockedOutLogin() {
+            await driver.get("https://www.saucedemo.com/");
+            await driver.manage().window().maximize();
+            await driver.findElement(By.id("user-name")).sendKeys("locked_out_user");
+            await driver.findElement(By.id("password")).sendKeys("secret_sauce");
+            await driver.findElement(By.id("login-button")).click();
+
+            const error = await driver.wait(
+                until.elementLocated(By.css("[data-test='error']")),
+                10000
+            ).getText();
+            assert.equal(error, "Epic sadface: Sorry, this user has been locked out.");
+            console.log("Assertion passed: actual error message matches expected result.");
+        },
+
+        async loginStandardUserAndReset() {
+            await driver.findElement(By.id("user-name")).clear();
+            await driver.findElement(By.id("user-name")).sendKeys("standard_user");
+            await driver.findElement(By.id("password")).clear();
+            await driver.findElement(By.id("password")).sendKeys("secret_sauce");
+            await driver.findElement(By.id("login-button")).click();
+            await driver.wait(
+                until.elementLocated(By.css("[data-test='inventory-container']")),
+                10000
+            );
+            await resetAppState(driver);
+        },
+
+        async addRandomProductsToCart() {
+            selectedProducts = await getRandomProductsFromInventory(driver, 3);
+            for (const product of selectedProducts) {
+                const productLocator = By.xpath(
+                    `//a[div[contains(text(), '${product.name}')]]`
+                );
+                await driver.wait(until.elementLocated(productLocator), 10000);
+                await driver.findElement(productLocator).click();
+                const addToCartButton = By.xpath(
+                    "//button[normalize-space()='Add to cart']"
+                );
+                await driver.wait(until.elementLocated(addToCartButton), 10000);
+                await driver.findElement(addToCartButton).click();
+                console.log(`Added to cart: ${product.name} ($${product.price.toFixed(2)})`);
+                const backButton = By.xpath("//button[text()='Back to products']");
+                await driver.wait(until.elementLocated(backButton), 10000);
+                await driver.findElement(backButton).click();
             }
-        }
+        },
 
-        if (!productIsVisible) {
-            missingProducts.push(product.name);
-        }
-    }
+        async verifyStandardCheckout() {
+            const cartLink = By.xpath("//a[@data-test='shopping-cart-link']");
+            await driver.wait(until.elementLocated(cartLink), 10000);
+            await driver.findElement(cartLink).click();
+            const checkoutButton = By.xpath("//button[text()='Checkout']");
+            await driver.wait(until.elementLocated(checkoutButton), 10000);
+            await driver.findElement(checkoutButton).click();
+            await enterCheckoutInformation();
 
-    if (missingProducts.length === 0) {
-        console.log(`All ${selectedProducts.length} selected products are visible on the checkout page.`);
-    } else {
-        console.warn(
-            `Not all ${selectedProducts.length} selected products are visible on the checkout page. ` +
-            `Missing: ${missingProducts.join(", ")}`
-        );
-    }
-    await driver.sleep(3000);
+            const missingProducts = [];
+            for (const product of selectedProducts) {
+                const productLocator = By.xpath(
+                    `//a[div[contains(text(), '${product.name}')]]`
+                );
+                const productElements = await driver.findElements(productLocator);
+                let productIsVisible = false;
+                for (const element of productElements) {
+                    if (await element.isDisplayed()) {
+                        productIsVisible = true;
+                        break;
+                    }
+                }
+                if (!productIsVisible) {
+                    missingProducts.push(product.name);
+                }
+            }
+            assert.deepEqual(missingProducts, [], "Some selected products are missing from checkout.");
+            console.log(`All ${selectedProducts.length} selected products are visible on the checkout page.`);
 
-    // Validate selected product subtotal and checkout total
-    const expectedSubtotalCents = selectedProducts.reduce(
-        (sum, product) => sum + Math.round(product.price * 100),
-        0
-    );
-    const subtotalElement = await driver.wait(
-        until.elementLocated(By.css("[data-test='subtotal-label']")),
-        10000
-    );
-    const subtotalText = await subtotalElement.getText();
-    const taxText = await driver.findElement(By.css("[data-test='tax-label']")).getText();
-    const totalText = await driver.findElement(By.css("[data-test='total-label']")).getText();
+            const expectedSubtotalCents = selectedProducts.reduce(
+                (sum, product) => sum + Math.round(product.price * 100),
+                0
+            );
+            const subtotalText = await driver.findElement(
+                By.css("[data-test='subtotal-label']")
+            ).getText();
+            const taxText = await driver.findElement(By.css("[data-test='tax-label']")).getText();
+            const totalText = await driver.findElement(By.css("[data-test='total-label']")).getText();
+            const actualSubtotalCents = moneyTextToCents(subtotalText);
+            const actualTaxCents = moneyTextToCents(taxText);
+            const actualTotalCents = moneyTextToCents(totalText);
+            const expectedTotalCents = actualSubtotalCents + actualTaxCents;
 
-    const actualSubtotalCents = moneyTextToCents(subtotalText);
-    const actualTaxCents = moneyTextToCents(taxText);
-    const actualTotalCents = moneyTextToCents(totalText);
-    const expectedTotalCents = actualSubtotalCents + actualTaxCents;
-    const subtotalMatches = actualSubtotalCents === expectedSubtotalCents;
-    const totalMatches = actualTotalCents === expectedTotalCents;
+            assert.equal(actualSubtotalCents, expectedSubtotalCents, "Checkout subtotal does not match.");
+            assert.equal(actualTotalCents, expectedTotalCents, "Checkout total does not equal subtotal plus tax.");
+            console.log(
+                `Amount matched: subtotal is $${(expectedSubtotalCents / 100).toFixed(2)} ` +
+                `and checkout total is $${(actualTotalCents / 100).toFixed(2)} (including tax).`
+            );
+        },
 
-    if (subtotalMatches && totalMatches) {
-        console.log(
-            `Amount matched: selected products subtotal is $${(expectedSubtotalCents / 100).toFixed(2)} ` +
-            `and checkout total is $${(actualTotalCents / 100).toFixed(2)} (including tax).`
-        );
-    } else {
-        console.error(
-            `Amount mismatch: expected subtotal $${(expectedSubtotalCents / 100).toFixed(2)}, ` +
-            `page subtotal $${(actualSubtotalCents / 100).toFixed(2)}, ` +
-            `and page total $${(actualTotalCents / 100).toFixed(2)} ` +
-            `(subtotal plus tax should be $${(expectedTotalCents / 100).toFixed(2)}).`
-        );
-    }
-    await driver.sleep(3000);
+        async completeStandardOrderAndLogout() {
+            await completeOrder();
+            await resetAndLogout();
+        },
 
-    // Finish order section
-    const finishButton = By.xpath("//button[@id='finish']");
-    await driver.wait(until.elementLocated(finishButton), 10000);
-    await driver.findElement(finishButton).click();
-    await driver.sleep(3000);
+        async loginPerformanceUserSortAndAddFirstProduct() {
+            await driver.wait(until.elementLocated(By.id("user-name")), 10000);
+            await driver.findElement(By.id("user-name"))
+                .sendKeys("performance_glitch_user");
+            await driver.findElement(By.id("password")).sendKeys("secret_sauce");
+            await driver.findElement(By.id("login-button")).click();
+            await driver.wait(
+                until.elementLocated(By.css("[data-test='inventory-container']")),
+                30000
+            );
+            await resetAppState(driver);
 
-    // Verify successful order message
-    const actualOrderMessage = await driver.findElement(
-        By.xpath("//h2[text()='Thank you for your order!']")
-    ).getText();
-    const expectedOrderMessage = "Thank you for your order!";
-    assert.equal(actualOrderMessage, expectedOrderMessage);
-    console.log("Order confirmation verified: " + actualOrderMessage);
+            const sortDropdown = By.css("select[data-test='product-sort-container']");
+            await driver.wait(until.elementLocated(sortDropdown), 10000);
+            await driver.findElement(sortDropdown).click();
+            const descendingOption = By.xpath(
+                "//select[@data-test='product-sort-container']/option[normalize-space()='Name (Z to A)']"
+            );
+            await driver.wait(until.elementLocated(descendingOption), 10000);
+            await driver.findElement(descendingOption).click();
+            assert.equal(await driver.findElement(sortDropdown).getAttribute("value"), "za");
 
-    // Menu button section
-    await driver.findElement(By.xpath("//button[@id='react-burger-menu-btn']")).click();
-    await driver.sleep(3000);
-
-    // Reset App State section
-    const resetAppStateLink = By.xpath("//a[@data-test='reset-sidebar-link']");
-    await driver.wait(until.elementLocated(resetAppStateLink), 10000);
-    await driver.findElement(resetAppStateLink).click();
-    await driver.sleep(3000);
-
-    // Logout section
-    const logoutLink = By.xpath("//a[text()='Logout']");
-    await driver.wait(until.elementLocated(logoutLink), 10000);
-    await driver.findElement(logoutLink).click();
-    await driver.sleep(3000);
-
-    // Log back in with the requested user after logout
-    await driver.wait(
-        until.elementLocated(By.xpath("//input[@id='user-name' and @name='user-name']")),
-        10000
-    );
-    await driver.findElement(By.xpath("//input[@id='user-name' and @name='user-name']"))
-        .sendKeys("performance_glitch_user");
-    await driver.findElement(By.xpath("//input[@id='password' and @name='password']"))
-        .sendKeys("secret_sauce");
-    await driver.findElement(By.xpath("//input[@id='login-button' and @name='login-button']"))
-        .click();
-    await driver.wait(
-        until.elementLocated(By.css("[data-test='inventory-container']")),
-        30000
-    );
-
-    // Reset App State and close the menu after logging back in
-    await resetAppState(driver);
-
-    // Sort products by name in descending order
-    const productSortDropdown = By.css("select[data-test='product-sort-container']");
-    await driver.wait(until.elementLocated(productSortDropdown), 10000);
-    await driver.findElement(productSortDropdown).click();
-    const nameDescendingOption = By.xpath(
-        "//select[@data-test='product-sort-container']/option[normalize-space()='Name (Z to A)']"
-    );
-    await driver.wait(until.elementLocated(nameDescendingOption), 10000);
-    await driver.findElement(nameDescendingOption).click();
-    assert.equal(await driver.findElement(productSortDropdown).getAttribute("value"), "za");
-
-    const sortedInventoryItems = await driver.wait(
-        until.elementsLocated(By.css("[data-test='inventory-item']")),
-        10000
-    );
-    const firstSortedProduct = sortedInventoryItems[0];
-    const firstSortedProductName = await firstSortedProduct
-        .findElement(By.css("[data-test='inventory-item-name']"))
-        .getText();
-    const firstSortedProductPriceText = await firstSortedProduct
-        .findElement(By.css("[data-test='inventory-item-price']"))
-        .getText();
-    const firstSortedProductPriceCents = moneyTextToCents(firstSortedProductPriceText);
-    await firstSortedProduct
-        .findElement(By.xpath(".//button[normalize-space()='Add to cart']"))
-        .click();
-    console.log(`Added first Z-A product to cart: ${firstSortedProductName}`);
-
-    // Open the cart and start checkout for the newly added product
-    const reloginShoppingCartLocator = By.xpath("//a[@data-test='shopping-cart-link']");
-    await driver.wait(until.elementLocated(reloginShoppingCartLocator), 10000);
-    await driver.findElement(reloginShoppingCartLocator).click();
-
-    const reloginCheckoutLocator = By.xpath("//button[text()='Checkout']");
-    await driver.wait(until.elementLocated(reloginCheckoutLocator), 10000);
-    await driver.findElement(reloginCheckoutLocator).click();
-
-    // Enter the same checkout details and continue
-    await driver.wait(until.elementLocated(By.id("first-name")), 10000);
-    await driver.findElement(By.id("first-name")).sendKeys("Nafis Fuad");
-    await driver.findElement(By.id("last-name")).sendKeys("Shovon");
-    await driver.findElement(By.id("postal-code")).sendKeys("1240");
-    const reloginContinueButton = By.xpath("//input[@id='continue']");
-    await driver.wait(until.elementLocated(reloginContinueButton), 10000);
-    await driver.findElement(reloginContinueButton).click();
-
-    // Verify the first Z-A product is visible in the relogin checkout overview
-    const reloginCheckoutProductLocator = By.xpath(
-        `//a[div[contains(text(), '${firstSortedProductName}')]]`
-    );
-    const reloginCheckoutProduct = await driver.wait(
-        until.elementLocated(reloginCheckoutProductLocator),
-        10000
-    );
-    assert.ok(
-        await reloginCheckoutProduct.isDisplayed(),
-        `Checkout product is not visible: ${firstSortedProductName}`
-    );
-    console.log(
-        `Product successfully visible; product name verified: ${firstSortedProductName}`
-    );
-
-    // Validate the checkout price against the price captured from inventory
-    const reloginCheckoutItems = await driver.wait(
-        until.elementsLocated(By.css("[data-test='inventory-item']")),
-        10000
-    );
-    let checkoutPriceText;
-    for (const item of reloginCheckoutItems) {
-        const checkoutItemName = await item
-            .findElement(By.css("[data-test='inventory-item-name']"))
-            .getText();
-        if (checkoutItemName === firstSortedProductName) {
-            checkoutPriceText = await item
+            const items = await driver.wait(
+                until.elementsLocated(By.css("[data-test='inventory-item']")),
+                10000
+            );
+            const firstProduct = items[0];
+            firstSortedProductName = await firstProduct
+                .findElement(By.css("[data-test='inventory-item-name']"))
+                .getText();
+            const priceText = await firstProduct
                 .findElement(By.css("[data-test='inventory-item-price']"))
                 .getText();
-            break;
-        }
-    }
+            firstSortedProductPriceCents = moneyTextToCents(priceText);
+            await firstProduct
+                .findElement(By.xpath(".//button[normalize-space()='Add to cart']"))
+                .click();
+            console.log(`Added first Z-A product to cart: ${firstSortedProductName}`);
+        },
 
-    assert.ok(
-        checkoutPriceText,
-        `Checkout price was not found for product: ${firstSortedProductName}`
-    );
-    const checkoutPriceCents = moneyTextToCents(checkoutPriceText);
-    assert.equal(
-        checkoutPriceCents,
-        firstSortedProductPriceCents,
-        `Checkout price does not match for product: ${firstSortedProductName}`
-    );
-    console.log(
-        `Product price verified: ${firstSortedProductName} ` +
-        `($${(checkoutPriceCents / 100).toFixed(2)})`
-    );
+        async verifyPerformanceCheckoutProduct() {
+            const cartLink = By.xpath("//a[@data-test='shopping-cart-link']");
+            await driver.wait(until.elementLocated(cartLink), 10000);
+            await driver.findElement(cartLink).click();
+            const checkoutButton = By.xpath("//button[text()='Checkout']");
+            await driver.wait(until.elementLocated(checkoutButton), 10000);
+            await driver.findElement(checkoutButton).click();
+            await enterCheckoutInformation();
 
-    // Finish the relogin user's order
-    const reloginFinishButton = By.xpath("//button[@id='finish']");
-    await driver.wait(until.elementLocated(reloginFinishButton), 10000);
-    await driver.findElement(reloginFinishButton).click();
+            const productLocator = By.xpath(
+                `//a[div[contains(text(), '${firstSortedProductName}')]]`
+            );
+            const checkoutProduct = await driver.wait(
+                until.elementLocated(productLocator),
+                10000
+            );
+            assert.ok(
+                await checkoutProduct.isDisplayed(),
+                `Checkout product is not visible: ${firstSortedProductName}`
+            );
+            console.log(
+                `Product successfully visible; product name verified: ${firstSortedProductName}`
+            );
 
-    // Verify the relogin user's order confirmation
-    const reloginOrderConfirmation = By.xpath("//h2[text()='Thank you for your order!']");
-    const reloginOrderMessage = await driver.wait(
-        until.elementLocated(reloginOrderConfirmation),
-        10000
-    ).getText();
-    assert.equal(reloginOrderMessage, "Thank you for your order!");
-    console.log(`Order confirmation verified: ${reloginOrderMessage}`);
+            const checkoutItems = await driver.wait(
+                until.elementsLocated(By.css("[data-test='inventory-item']")),
+                10000
+            );
+            let checkoutPriceText;
+            for (const item of checkoutItems) {
+                const name = await item
+                    .findElement(By.css("[data-test='inventory-item-name']"))
+                    .getText();
+                if (name === firstSortedProductName) {
+                    checkoutPriceText = await item
+                        .findElement(By.css("[data-test='inventory-item-price']"))
+                        .getText();
+                    break;
+                }
+            }
+            assert.ok(
+                checkoutPriceText,
+                `Checkout price was not found for product: ${firstSortedProductName}`
+            );
+            const checkoutPriceCents = moneyTextToCents(checkoutPriceText);
+            assert.equal(
+                checkoutPriceCents,
+                firstSortedProductPriceCents,
+                `Checkout price does not match for product: ${firstSortedProductName}`
+            );
+            console.log(
+                `Product price verified: ${firstSortedProductName} ` +
+                `($${(checkoutPriceCents / 100).toFixed(2)})`
+            );
+        },
 
-    // Menu button section
-    await driver.findElement(By.xpath("//button[@id='react-burger-menu-btn']")).click();
-    await driver.sleep(3000);
+        async completePerformanceOrderAndLogout() {
+            await completeOrder();
+            await resetAndLogout();
+        },
 
-    // Reset App State section
-    const reloginResetAppStateLink = By.xpath("//a[@data-test='reset-sidebar-link']");
-    await driver.wait(until.elementLocated(reloginResetAppStateLink), 10000);
-    await driver.findElement(reloginResetAppStateLink).click();
-    await driver.sleep(3000);
-
-    // Logout section
-    const reloginLogoutLink = By.xpath("//a[text()='Logout']");
-    await driver.wait(until.elementLocated(reloginLogoutLink), 10000);
-    await driver.findElement(reloginLogoutLink).click();
-    await driver.sleep(3000);
-
-    await driver.quit();
+        async quit() {
+            await driver.quit();
+        },
+    };
 }
-
-runner();
