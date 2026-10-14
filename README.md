@@ -53,7 +53,7 @@ These cases describe the main checks in the project. The current Selenium script
 | SD-CHECKOUT-02 | Verify sorted product in checkout | E2E / Validation | Add the first Z-to-A product, continue through checkout, and review the order. | The product name is visible and its checkout price matches its inventory price. |
 | SD-RESET-01 | Reset app state and log out | Functional | Open the hamburger menu, select **Reset App State**, then select **Logout**. | The app state is reset and the user returns to the login page. |
 
-The project does not currently include a linked spreadsheet of test cases.
+An editable Excel workbook with these test cases, execution steps, expected results, and status tracking is available in [`SauceDemo_Test_Cases.xlsx`](./SauceDemo_Test_Cases.xlsx). Test statuses start as **Not executed** and can be updated from the dropdown; the summary counts update in Excel.
 
 ## Project Structure
 
@@ -62,6 +62,7 @@ The project does not currently include a linked spreadsheet of test cases.
 ├── Api_call.js          # Axios functions for retrieving/parsing product data
 ├── main_body.js         # End-to-end Selenium checkout automation
 ├── package.json         # Project dependencies
+├── SauceDemo_Test_Cases.xlsx # Editable test-case workbook and status dashboard
 ├── reset_app_state.js   # Reusable reset-app-state/menu-close function
 └── README.md
 ```
