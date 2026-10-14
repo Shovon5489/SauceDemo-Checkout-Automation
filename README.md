@@ -22,6 +22,22 @@ A browser automation project for validating key login, product, cart, and checko
 | Browser | Google Chrome |
 | HTTP client | Axios |
 
+## Test Coverage Overview
+
+The current automation is a sequential end-to-end browser flow in `main_body.js`; the checks below are automated in that run.
+
+| Area | Automated coverage |
+| --- | --- |
+| Login | Confirms `locked_out_user` displays the expected error; signs in with `standard_user` and `performance_glitch_user`. |
+| Product browsing | Randomly selects three inventory products for the standard-user flow; sorts the second user's inventory by **Name (Z to A)**. |
+| Cart management | Adds selected products to the cart and proceeds through checkout; adds the first Z-A product in the second flow. |
+| Checkout contents | Checks that selected products appear in the checkout overview and verifies the second flow's product name is visible. |
+| Price and totals | Compares the first flow's expected subtotal and total; compares the second flow's product price with its inventory price. |
+| Order confirmation | Completes both checkout flows and asserts the **Thank you for your order!** confirmation. |
+| App state and logout | Resets app state and logs out as part of the flow. |
+
+The script currently exercises these scenarios in Chrome as one run. It does not define a separate unit-test suite or cross-browser test configuration.
+
 ## Project Structure
 
 ```text
