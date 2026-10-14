@@ -21,6 +21,7 @@ A browser automation project for validating key login, product, cart, and checko
 | Browser automation | Selenium WebDriver |
 | Browser | Google Chrome |
 | HTTP client | Axios |
+| Test runner and reporting | Mocha and Allure |
 
 ## Test Coverage Overview
 
@@ -36,7 +37,7 @@ The current automation is a sequential end-to-end browser flow in `main_body.js`
 | Order confirmation | Completes both checkout flows and asserts the **Thank you for your order!** confirmation. |
 | App state and logout | Resets app state and logs out as part of the flow. |
 
-The script currently exercises these scenarios in Chrome as one run. It does not define a separate unit-test suite or cross-browser test configuration.
+The browser scenarios run sequentially as one Mocha end-to-end test, with results written for Allure. The project does not include a separate unit-test suite or cross-browser test configuration.
 
 ## Sample Manual Test Cases
 
@@ -60,6 +61,7 @@ An editable Excel workbook with these test cases, execution steps, expected resu
 ```text
 .
 ├── Api_call.js          # Axios functions for retrieving/parsing product data
+├── automation.test.js   # Mocha entry point that runs the browser flow for Allure
 ├── main_body.js         # End-to-end Selenium checkout automation
 ├── package.json         # Project dependencies
 ├── SauceDemo_Test_Cases.xlsx # Editable test-case workbook and status dashboard
@@ -71,6 +73,7 @@ An editable Excel workbook with these test cases, execution steps, expected resu
 
 - Node.js and npm
 - Google Chrome installed
+- Java 8 or later available on `PATH` (required by the Allure command-line report generator)
 - Internet access to reach SauceDemo and download its product bundle
 
 ## Setup
@@ -81,13 +84,15 @@ Install the project dependencies from the project directory:
 npm install
 ```
 
-## Run the Automation
+## Run the Automation and Generate an Allure Report
 
 ```bash
-node main_body.js
+npm test
+npm run allure:generate
+npm run allure:open
 ```
 
-The script opens Chrome and runs the browser flow. Selenium Manager may download a compatible ChromeDriver if one is not already available.
+`npm test` opens Chrome, runs the sequential browser flow, and writes raw Allure results to `allure-results/`. Generate the HTML report with `npm run allure:generate`, then open it with `npm run allure:open` (equivalent to `allure open allure-report`). Selenium Manager may download a compatible ChromeDriver if one is not already available. The Allure CLI requires Java 8 or later.
 
 ## Test Flow
 
@@ -139,7 +144,7 @@ The current browser flow reads the products used for its inventory steps directl
 - **Standalone product-data utilities:** `Api_call.js` uses Axios to retrieve product names and prices, independently of the browser-driven inventory selection.
 - **Explicit Selenium waits:** The flow waits for key page elements before interacting with them, including the slower performance-glitch user's inventory.
 
-The project currently runs as a single Chrome-based Selenium script; it does not include Cucumber features, a Page Object Model, cross-browser execution, or CI workflow configuration.
+The project currently runs as a single Chrome-based Selenium flow under Mocha; it does not include Cucumber features, a Page Object Model, cross-browser execution, or CI workflow configuration.
 
 ## Final Thoughts
 
