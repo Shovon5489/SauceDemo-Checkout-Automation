@@ -38,6 +38,23 @@ The current automation is a sequential end-to-end browser flow in `main_body.js`
 
 The script currently exercises these scenarios in Chrome as one run. It does not define a separate unit-test suite or cross-browser test configuration.
 
+## Sample Manual Test Cases
+
+These cases describe the main checks in the project. The current Selenium script runs them together as an end-to-end flow rather than as separately selectable tests.
+
+| ID | Test case | Type | Steps | Expected result |
+| --- | --- | --- | --- | --- |
+| SD-LOGIN-01 | Locked-out user login | Negative / Functional | Open SauceDemo, enter `locked_out_user` and `secret_sauce`, then click Login. | The locked-out error message is displayed. |
+| SD-LOGIN-02 | Standard user login | Functional | Sign in as `standard_user` with `secret_sauce`. | The inventory page opens. |
+| SD-CART-01 | Add products to cart | Functional | Select three distinct products, open each product, and click **Add to cart**. | The selected products can be found in the cart and checkout overview. |
+| SD-CHECKOUT-01 | Checkout totals | E2E / Validation | Continue from the cart, enter checkout information, and review the order. | The subtotal equals the selected product prices, and the total equals the subtotal plus tax. |
+| SD-ORDER-01 | Order confirmation | E2E | Finish the checkout. | The page displays **Thank you for your order!** |
+| SD-SORT-01 | Sort products by name descending | Functional | Sign in as `performance_glitch_user` and choose **Name (Z to A)**. | The sort control shows the Z-to-A selection and the first sorted item is available. |
+| SD-CHECKOUT-02 | Verify sorted product in checkout | E2E / Validation | Add the first Z-to-A product, continue through checkout, and review the order. | The product name is visible and its checkout price matches its inventory price. |
+| SD-RESET-01 | Reset app state and log out | Functional | Open the hamburger menu, select **Reset App State**, then select **Logout**. | The app state is reset and the user returns to the login page. |
+
+The project does not currently include a linked spreadsheet of test cases.
+
 ## Project Structure
 
 ```text
@@ -112,3 +129,17 @@ The current browser flow reads the products used for its inventory steps directl
 ## App State Helper
 
 `reset_app_state.js` exports `resetAppState(driver)`. It opens the hamburger menu, clicks **Reset App State**, and closes the menu. `main_body.js` calls this helper after the `standard_user` login and after the `performance_glitch_user` login.
+
+## Interesting Additions
+
+- **Random non-repeating product selection:** The standard-user flow shuffles inventory products and chooses three unique items.
+- **Price checks in cents:** Checkout amounts are converted to integer cents before comparison to avoid floating-point rounding errors.
+- **Reusable browser helper:** App-state reset and menu closing are kept in `reset_app_state.js` so the same steps can be called from the main flow.
+- **Standalone product-data utilities:** `Api_call.js` uses Axios to retrieve product names and prices, independently of the browser-driven inventory selection.
+- **Explicit Selenium waits:** The flow waits for key page elements before interacting with them, including the slower performance-glitch user's inventory.
+
+The project currently runs as a single Chrome-based Selenium script; it does not include Cucumber features, a Page Object Model, cross-browser execution, or CI workflow configuration.
+
+## Final Thoughts
+
+This project demonstrates a practical SauceDemo checkout automation flow using JavaScript and Selenium WebDriver. It covers a locked-out login check, product selection and sorting, cart and checkout validation, order confirmation, and app-state reset. The modular reset helper and separate Axios utilities provide a straightforward base for adding independently runnable tests, richer reporting, or additional browser coverage later.
