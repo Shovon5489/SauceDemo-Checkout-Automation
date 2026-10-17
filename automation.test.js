@@ -1,24 +1,46 @@
-import { after, before, describe, it } from "mocha";
+import { after, afterEach, before, describe, it } from "mocha";
 import { createAutomationSession } from "./main_body.js";
 
-let session;
-
-describe("SauceDemo checkout automation", function () {
-    this.timeout(10 * 60 * 1000);
-
+// Independent scenario setup and cleanup section
+function configureScenarioHooks(getSession, setSession) {
     before(async function () {
-        session = await createAutomationSession();
+        this.timeout(10 * 60 * 1000);
+        setSession(await createAutomationSession());
+    });
+
+    // Visible pause after each test case section
+    afterEach(async function () {
+        const session = getSession();
+        if (session) {
+            await session.driver.sleep(3000);
+        }
     });
 
     after(async function () {
+        const session = getSession();
         if (session) {
             await session.quit();
+            setSession(undefined);
         }
     });
+}
+
+// Locked-out login scenario section
+describe("Scenario 1: locked-out user login", function () {
+    let session;
+    this.timeout(10 * 60 * 1000);
+    configureScenarioHooks(() => session, (value) => { session = value; });
 
     it("rejects login for the locked-out user", async function () {
         await session.verifyLockedOutLogin();
     });
+});
+
+// Standard-user checkout scenario section
+describe("Scenario 2: standard_user checkout", function () {
+    let session;
+    this.timeout(10 * 60 * 1000);
+    configureScenarioHooks(() => session, (value) => { session = value; });
 
     it("logs in as standard_user and resets app state", async function () {
         await session.loginStandardUserAndReset();
@@ -35,6 +57,13 @@ describe("SauceDemo checkout automation", function () {
     it("completes the standard-user order and logs out", async function () {
         await session.completeStandardOrderAndLogout();
     });
+});
+
+// Performance-user checkout scenario section
+describe("Scenario 3: performance_glitch_user checkout", function () {
+    let session;
+    this.timeout(10 * 60 * 1000);
+    configureScenarioHooks(() => session, (value) => { session = value; });
 
     it("sorts performance_glitch_user inventory and adds the first Z-A product", async function () {
         await session.loginPerformanceUserSortAndAddFirstProduct();

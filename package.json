@@ -10,8 +10,10 @@
     "mocha": "^12.0.3"
   },
   "scripts": {
-    "pretest": "node --input-type=commonjs -e \"require('node:fs').rmSync('allure-results', { recursive: true, force: true })\"",
-    "test": "mocha --bail --reporter allure-mocha --reporter-option resultsDir=allure-results automation.test.js",
+    "test": "node run-tests.js",
+    "test:locked-out": "npm test -- --grep \"Scenario 1: locked-out user login\"",
+    "test:standard": "npm test -- --grep \"Scenario 2: standard_user checkout\"",
+    "test:performance": "npm test -- --grep \"Scenario 3: performance_glitch_user checkout\"",
     "allure:generate": "allure generate allure-results --clean -o allure-report",
     "allure:open": "allure open allure-report"
   }
