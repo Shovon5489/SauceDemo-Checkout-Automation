@@ -1,1 +1,493 @@
-
+{
+  "info": {
+    "_postman_id": "c49c3974-e3a3-46a6-9060-45bcf42bd94b",
+    "name": "Api_automation_Assignment",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54115326"
+  },
+  "item": [
+    {
+      "name": "Q3 Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst json = pm.response.json();\r\n\r\npm.test(\"Token is present\", () => {\r\n    pm.expect(json.token).to.be.a(\"string\").and.not.empty;\r\n});\r\n\r\n// token save করা (authToken)\r\npm.environment.set(\"authToken\", json.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            {
+              "key": "key",
+              "value": "x-api-key",
+              "type": "string"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"eve.holt@reqres.in\",\r\n  \"password\": \"cityslicka\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q4 Get User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst user = pm.response.json().data;\r\n\r\npm.test(\"User ID matches\", () => {\r\n    pm.expect(user.id).to.eql(parseInt(pm.environment.get(\"userId\")));\r\n});\r\n\r\npm.test(\"Name matches\", () => {\r\n    pm.expect(user.first_name).to.eql(\"Janet\");\r\n});\r\n\r\npm.test(\"Email matches\", () => {\r\n    pm.expect(user.email).to.eql(\"janet.weaver@reqres.in\");\r\n});\r\n\r\n// Q8-এ ব্যবহারের জন্য save\r\npm.environment.set(\"firstName\", user.first_name);\r\npm.environment.set(\"email\", user.email);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q5 Put Profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst json = pm.response.json();\r\n\r\npm.test(\"updatedAt is present\", () => {\r\n    pm.expect(json.updatedAt).to.exist;\r\n});\r\n\r\npm.test(\"updatedAt is recent (within 2 minutes)\", () => {\r\n    const diff = Math.abs(new Date() - new Date(json.updatedAt));\r\n    pm.expect(diff).to.be.below(2 * 60 * 1000);\r\n});\r\n\r\npm.test(\"Updated values are returned\", () => {\r\n    pm.expect(json.name).to.eql(\"Shovon\");\r\n    pm.expect(json.job).to.eql(\"QA Engineer\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{authToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"name\": \"Shovon\",\r\n  \"job\": \"QA Engineer\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q6 Patch Single Field",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\nconst json = pm.response.json();\r\n\r\npm.test(\"Only the job field was changed\", () => {\r\n    pm.expect(json.job).to.eql(\"Senior QA\");\r\n    pm.expect(json).to.not.have.property(\"name\");\r\n});\r\n\r\npm.test(\"updatedAt is present\", () => {\r\n    pm.expect(json.updatedAt).to.exist;\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"job\": \"Senior QA\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "{{userId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q8-1 Login Missing Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 4xx\", () => {\r\n    pm.expect(pm.response.code).to.be.within(400, 499);\r\n});\r\n\r\npm.test(\"Error message is present\", () => {\r\n    pm.expect(pm.response.json()).to.have.property(\"error\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            {
+              "key": "key",
+              "value": "x-api-key",
+              "type": "string"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"email\": \"{{email}}\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q8-2 Login Missing Email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 4xx\", () => {\r\n    pm.expect(pm.response.code).to.be.within(400, 499);\r\n});\r\n\r\npm.test(\"Error message is present\", () => {\r\n    pm.expect(pm.response.json()).to.have.property(\"error\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            {
+              "key": "key",
+              "value": "x-api-key",
+              "type": "string"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"password\": \"cityslicka\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q8-3 Login Unregistered User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 4xx\", () => {\r\n    pm.expect(pm.response.code).to.be.within(400, 499);\r\n});\r\n\r\npm.test(\"Error message is present\", () => {\r\n    pm.expect(pm.response.json()).to.have.property(\"error\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            {
+              "key": "key",
+              "value": "x-api-key",
+              "type": "string"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"nouser@test.com\", \"password\": \"123456\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q8-4 Register Missing Password",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 4xx\", () => {\r\n    pm.expect(pm.response.code).to.be.within(400, 499);\r\n});\r\n\r\npm.test(\"Error message is present\", () => {\r\n    pm.expect(pm.response.json()).to.have.property(\"error\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            {
+              "key": "key",
+              "value": "x-api-key",
+              "type": "string"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"{{email}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Q8-5 User Not Found",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 404\", () => {\r\n    pm.response.to.have.status(404);\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            {
+              "key": "key",
+              "value": "x-api-key",
+              "type": "string"
+            },
+            {
+              "key": "value",
+              "value": "{{apiKey}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": ""
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/9999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users",
+            "9999"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      }
+    ]
+  }
+}
