@@ -37,7 +37,7 @@ The current automation is a sequential end-to-end browser flow in `main_body.js`
 | Order confirmation | Completes both checkout flows and asserts the **Thank you for your order!** confirmation. |
 | App state and logout | Resets app state and logs out as part of the flow. |
 
-The automation is organized into three independent end-to-end scenarios containing eight Mocha test cases total (one locked-out login, four standard-user checkout steps, and three performance-user checkout steps). Each scenario starts and closes its own Chrome session, so it can run by itself or as part of the full sequential suite. Allure reports all eight test cases, grouped under their scenario.
+The automation is organized into three independent end-to-end scenarios containing nine Mocha test cases total (one locked-out login, five standard-user checkout steps, and three performance-user checkout steps). The standard-user order confirmation and app reset/logout are reported as separate test cases. Each scenario starts and closes its own Chrome session, so it can run by itself or as part of the full sequential suite. Allure reports all nine test cases, grouped under their scenario.
 
 ## Sample Manual Test Cases
 
@@ -61,7 +61,7 @@ An editable Excel workbook with these test cases, execution steps, expected resu
 ```text
 .
 ├── Api_call.js          # Axios functions for retrieving/parsing product data
-├── automation.test.js   # Three scenarios containing eight Mocha test cases
+├── automation.test.js   # Three scenarios containing nine Mocha test cases
 ├── main_body.js         # End-to-end Selenium checkout automation
 ├── package.json         # Project dependencies
 ├── SauceDemo_Test_Cases.xlsx # Editable test-case workbook and status dashboard
@@ -111,7 +111,9 @@ npm run test:standard
 npm run test:performance
 ```
 
-Each command starts a fresh Chrome session for each selected scenario. `npm test` runs all three scenarios sequentially, each in its own session, and records eight individual Mocha test cases in Allure. After every run, including a run with a failing test, the runner generates an Allure HTML report in `allure-report/`, keeps the raw results in `allure-results/`, and refreshes the Allure overview and graphs screenshots in `Screenshots/`. The login scenario also captures the login form and locked-out error; the standard-user scenario captures the inventory page after login. Open the latest report with:
+Each command starts a fresh Chrome session for each selected scenario. `npm test` runs all three scenarios sequentially, each in its own session, and records nine individual Mocha test cases in Allure. After every run, including a run with a failing test, the runner generates an Allure HTML report in `allure-report/`, keeps the raw results in `allure-results/`, and refreshes the Allure overview and graphs screenshots in `Screenshots/`. The login scenario also captures the login form and locked-out error; the standard-user scenario captures the inventory page after login. Open the latest report with:
+
+Key verification results, selected products, saved screenshots, and report generation are printed in bordered `PASS` boxes in the terminal. Chrome and WebDriver diagnostic messages may still appear outside those boxes.
 
 ```bash
 npm run allure:open

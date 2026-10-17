@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { logBox } from "./terminal_output.js";
 
 // Test runner setup section
 const projectDirectory = path.dirname(fileURLToPath(import.meta.url));
@@ -58,8 +59,14 @@ const testRun = spawnSync(
 const reportRun = spawnSync(
     process.execPath,
     [allureCli, "generate", "allure-results", "--clean", "-o", "allure-report"],
-    { cwd: projectDirectory, stdio: "inherit" }
+    { cwd: projectDirectory, encoding: "utf8" }
 );
+if (reportRun.status === 0) {
+    logBox("Allure HTML report generated: allure-report");
+} else {
+    process.stdout.write(reportRun.stdout ?? "");
+    process.stderr.write(reportRun.stderr ?? "");
+}
 const screenshotRun = reportRun.status === 0
     ? spawnSync(
         process.execPath,

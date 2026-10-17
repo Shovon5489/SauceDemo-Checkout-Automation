@@ -54,8 +54,14 @@ describe("Scenario 2: standard_user checkout", function () {
         await session.verifyStandardCheckout();
     });
 
-    it("completes the standard-user order and logs out", async function () {
-        await session.completeStandardOrderAndLogout();
+    // Standard-user order completion section
+    it("completes the standard-user order", async function () {
+        await session.completeStandardOrder();
+    });
+
+    // Standard-user app reset and logout section
+    it("resets app state and logs out the standard user", async function () {
+        await session.resetStandardUserAppStateAndLogout();
     });
 });
 

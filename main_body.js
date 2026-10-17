@@ -3,6 +3,7 @@ import { Options } from "selenium-webdriver/chrome.js";
 import assert from "node:assert/strict";
 import { resetAppState } from "./reset_app_state.js";
 import { saveScreenshot } from "./screenshots.js";
+import { logBox } from "./terminal_output.js";
 
 function moneyTextToCents(text) {
     const amount = text.match(/(\d[\d,]*\.\d{2})/);
@@ -81,7 +82,7 @@ export async function createAutomationSession() {
         const confirmation = By.xpath("//h2[text()='Thank you for your order!']");
         const message = await driver.wait(until.elementLocated(confirmation), 10000).getText();
         assert.equal(message, "Thank you for your order!");
-        console.log(`Order confirmation verified: ${message}`);
+        logBox(`Order confirmation verified: ${message}`);
     }
 
     async function resetAndLogout() {
@@ -121,7 +122,7 @@ export async function createAutomationSession() {
             ).getText();
             assert.equal(error, "Epic sadface: Sorry, this user has been locked out.");
             await saveScreenshot(driver, "Failed-login");
-            console.log("Assertion passed: actual error message matches expected result.");
+            logBox("Assertion passed: actual error message matches expected result.");
         },
 
         async loginStandardUserAndReset() {
@@ -156,7 +157,7 @@ export async function createAutomationSession() {
                 );
                 await driver.wait(until.elementLocated(addToCartButton), 10000);
                 await driver.findElement(addToCartButton).click();
-                console.log(`Added to cart: ${product.name} ($${product.price.toFixed(2)})`);
+                logBox(`Added to cart: ${product.name} ($${product.price.toFixed(2)})`);
                 const backButton = By.xpath("//button[text()='Back to products']");
                 await driver.wait(until.elementLocated(backButton), 10000);
                 await driver.findElement(backButton).click();
@@ -194,7 +195,9 @@ export async function createAutomationSession() {
                 }
             }
             assert.deepEqual(missingProducts, [], "Some selected products are missing from checkout.");
-            console.log(`All ${selectedProducts.length} selected products are visible on the checkout page.`);
+            logBox(
+                `All ${selectedProducts.length} selected products are visible on the checkout page.`
+            );
 
             // Validate selected product subtotal and checkout total
             const expectedSubtotalCents = selectedProducts.reduce(
@@ -213,14 +216,17 @@ export async function createAutomationSession() {
 
             assert.equal(actualSubtotalCents, expectedSubtotalCents, "Checkout subtotal does not match.");
             assert.equal(actualTotalCents, expectedTotalCents, "Checkout total does not equal subtotal plus tax.");
-            console.log(
+            logBox(
                 `Amount matched: subtotal is $${(expectedSubtotalCents / 100).toFixed(2)} ` +
                 `and checkout total is $${(actualTotalCents / 100).toFixed(2)} (including tax).`
             );
         },
 
-        async completeStandardOrderAndLogout() {
+        async completeStandardOrder() {
             await completeOrder();
+        },
+
+        async resetStandardUserAppStateAndLogout() {
             await resetAndLogout();
         },
 
@@ -267,7 +273,7 @@ export async function createAutomationSession() {
             await firstProduct
                 .findElement(By.xpath(".//button[normalize-space()='Add to cart']"))
                 .click();
-            console.log(`Added first Z-A product to cart: ${firstSortedProductName}`);
+            logBox(`Added first Z-A product to cart: ${firstSortedProductName}`);
         },
 
         async verifyPerformanceCheckoutProduct() {
@@ -294,7 +300,7 @@ export async function createAutomationSession() {
                 await checkoutProduct.isDisplayed(),
                 `Checkout product is not visible: ${firstSortedProductName}`
             );
-            console.log(
+            logBox(
                 `Product successfully visible; product name verified: ${firstSortedProductName}`
             );
 
@@ -325,7 +331,7 @@ export async function createAutomationSession() {
                 firstSortedProductPriceCents,
                 `Checkout price does not match for product: ${firstSortedProductName}`
             );
-            console.log(
+            logBox(
                 `Product price verified: ${firstSortedProductName} ` +
                 `($${(checkoutPriceCents / 100).toFixed(2)})`
             );
